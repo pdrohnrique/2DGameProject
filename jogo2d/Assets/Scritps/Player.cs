@@ -3,8 +3,17 @@ using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private float velocidade = 10f;
-    [SerializeField] private float forcaPulo = 10f;
+    [Header("Movimento")]
+    [SerializeField] private float maxSpeed = 10f;    // Velocidade máxima
+    [SerializeField] private float acceleration = 15f; // Taxa de aceleração
+    [SerializeField] private float deceleration = 20f; // Taxa de desaceleração
+    [SerializeField] private float friction = 5f;      // Atrito quando parado
+    
+    [Header("Pulo")]
+    [SerializeField] private float jumpSpeed = 10f;
+    [SerializeField] private float jumpShortSpeed = 5f;
+    
+    [Header("Configurações")]
     [SerializeField] private LayerMask chaoLayer;
     [SerializeField] private Transform peCheck;
     [SerializeField] private float raioChecagem = 0.2f;
@@ -12,6 +21,10 @@ public class Player : MonoBehaviour
     private Rigidbody2D _rigidbody2D;
     private SpriteRenderer spriteRenderer;
     private bool noChao;
+    private bool jump;
+    private bool jumpCancel;
+    private float movimentoX;
+    private bool facingRight = true; // Direção atual do personagem
 
     void Start()
     {
@@ -21,23 +34,68 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        // Movimento horizontal com suavização
-        float movimentoX = Input.GetAxis("Horizontal");
-        _rigidbody2D.velocity = new Vector2(movimentoX * velocidade, _rigidbody2D.velocity.y);
+        // Input e flip do sprite
+        movimentoX = Input.GetAxisRaw("Horizontal");
+        UpdateSpriteDirection();
 
-        // Flip do sprite
-        if(movimentoX != 0)
-        {
-            spriteRenderer.flipX = movimentoX < 0;
-        }
-        
-        // Verifica se está no chão
+        // Verificação de chão
         noChao = Physics2D.OverlapCircle(peCheck.position, raioChecagem, chaoLayer);
 
-        // Pulo
-        if(Input.GetButtonDown("Jump") && noChao)
+        // Lógica do pulo
+        if (Input.GetButtonDown("Jump") && noChao) jump = true;
+        if (Input.GetButtonUp("Jump") && !noChao) jumpCancel = true;
+    }
+
+    void FixedUpdate()
+    {
+        // Movimento horizontal com aceleração
+        ApplyHorizontalMovement();
+
+        // Lógica do pulo
+        HandleJump();
+    }
+
+    void ApplyHorizontalMovement()
+    {
+        float targetSpeed = movimentoX * maxSpeed;
+        float speedDiff = targetSpeed - _rigidbody2D.velocity.x;
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+
+        // Aplica força para atingir a velocidade alvo
+        float movement = Mathf.Pow(Mathf.Abs(speedDiff) * accelRate, 0.96f) * Mathf.Sign(speedDiff);
+        _rigidbody2D.AddForce(movement * Vector2.right);
+
+        // Aplica atrito quando parado
+        if (Mathf.Abs(movimentoX) < 0.01f)
         {
-            _rigidbody2D.AddForce(Vector2.up * forcaPulo, ForceMode2D.Impulse);
+            float frictionAmount = Mathf.Min(Mathf.Abs(_rigidbody2D.velocity.x), friction);
+            frictionAmount *= Mathf.Sign(_rigidbody2D.velocity.x);
+            _rigidbody2D.AddForce(-frictionAmount * Vector2.right, ForceMode2D.Impulse);
+        }
+    }
+
+    void UpdateSpriteDirection()
+    {
+        // Mantém a direção mesmo quando parado
+        if (movimentoX > 0) facingRight = true;
+        if (movimentoX < 0) facingRight = false;
+        
+        spriteRenderer.flipX = !facingRight;
+    }
+
+    void HandleJump()
+    {
+        if (jump)
+        {
+            _rigidbody2D.velocity = new Vector2(_rigidbody2D.velocity.x, jumpSpeed);
+            jump = false;
+        }
+
+        if (jumpCancel)
+        {
+            if (_rigidbody2D.velocity.y > jumpShortSpeed)
+                _rigidbody2D.velocity = new Vector2(_rigidbody2D.velocity.x, jumpShortSpeed);
+            jumpCancel = false;
         }
     }
 
@@ -56,10 +114,9 @@ public class Player : MonoBehaviour
         }
     }
 
-    // Visualização do ground check no editor
     void OnDrawGizmosSelected()
     {
-        if(peCheck != null)
+        if (peCheck != null)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(peCheck.position, raioChecagem);

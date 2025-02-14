@@ -25,6 +25,16 @@ public class MovingPlatform : MonoBehaviour
         }
     }
 
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        collision.gameObject.transform.parent = gameObject.transform;
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        collision.gameObject.transform.parent = null;
+    }
+
     void OnDrawGizmos()
     {
         if (points == null || points.Length == 0) return;
