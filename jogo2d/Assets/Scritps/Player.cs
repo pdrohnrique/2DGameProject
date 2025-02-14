@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
@@ -37,6 +38,21 @@ public class Player : MonoBehaviour
         if(Input.GetButtonDown("Jump") && noChao)
         {
             _rigidbody2D.AddForce(Vector2.up * forcaPulo, ForceMode2D.Impulse);
+        }
+    }
+
+    // Método para reiniciar do checkpoint
+    public void ReiniciarDoCheckpoint()
+    {
+        if (GameManager.Instance.UltimoCheckpoint != Vector2.zero)
+        {
+            // Reposiciona o jogador no último checkpoint
+            transform.position = GameManager.Instance.UltimoCheckpoint;
+        }
+        else
+        {
+            // Se não houver checkpoint, reinicia a cena
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 
