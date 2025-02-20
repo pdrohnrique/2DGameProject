@@ -114,6 +114,15 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {   
+        if (collision.gameObject.CompareTag("Plataforma"))
+        {
+            Texts.instance.ShowGameOver(); // Chama a tela de fim de jogo
+            Time.timeScale = 0; // Pausa o jogo (opcional)
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
         if (peCheck != null)
