@@ -1,2 +1,2 @@
-# jogo2d
- jogo de plataforma
+# 2DGameProject
+ Adventure Time 2D Game
